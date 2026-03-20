@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Sidebar } from "@/components/ui/sidebar";
 
 export default function RadarDashboard() {
   return (
