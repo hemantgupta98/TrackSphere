@@ -11,6 +11,13 @@ type AppShellRiderProps = Readonly<{
   children: ReactNode;
 }>;
 
+const publicRoutes = [
+  "/",
+  "/src/auth/admin",
+  "/src/auth/user",
+  "/src/auth/forget",
+];
+
 function formatRouteLabel(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
   const riderIndex = segments.indexOf("src");
@@ -31,7 +38,13 @@ export default function AppShellRider({ children }: AppShellRiderProps) {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const isPublicRoute = publicRoutes.includes(pathname);
+
   const pageTitle = useMemo(() => formatRouteLabel(pathname), [pathname]);
+
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="h-dvh overflow-hidden bg-slate-100 text-slate-950">
