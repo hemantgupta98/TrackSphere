@@ -56,10 +56,10 @@ export default function AppShellRider({ children }: AppShellRiderProps) {
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-                SwiftRide
+                Tracksphere
               </p>
               <h2 className="text-lg font-semibold text-slate-950">
-                Rider Panel
+                Admin Panel
               </h2>
             </div>
 
@@ -102,7 +102,7 @@ export default function AppShellRider({ children }: AppShellRiderProps) {
 
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium uppercase tracking-[0.28em] text-slate-500">
-                Rider Workspace
+                Admin Workspace
               </p>
               <h1 className="truncate text-lg font-semibold text-slate-950">
                 {pageTitle}

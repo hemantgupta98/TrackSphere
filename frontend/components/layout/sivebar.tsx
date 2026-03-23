@@ -8,7 +8,6 @@ import {
   WorkflowIcon,
   Users,
   Settings,
-  HelpCircle,
   LogOut,
   Workflow,
   User2Icon,
@@ -20,6 +19,7 @@ const links = [
   { name: "Object History", href: "/src/ObjectHistory", icon: Users },
   { name: "System Logs", href: "/src/SystemLogs", icon: WorkflowIcon },
   { name: "Setting", href: "/src/setting", icon: Settings },
+  { name: "Log Out", href: "/src/logout", icon: LogOut },
 ];
 
 type SidebarProps = {
@@ -35,7 +35,7 @@ export default function Sidebar({ className, onNavigate }: SidebarProps) {
         className,
       )}
     >
-      <div className="p-6 text-2xl font-bold text-white">SwiftRide</div>
+      <div className="p-6 text-2xl font-bold text-white">Tracksphere</div>
       <nav className="flex-1 space-y-1 px-3">
         {links.map((item) => (
           <Link
