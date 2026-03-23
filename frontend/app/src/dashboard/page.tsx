@@ -5,6 +5,29 @@ import { useState } from "react";
 import RadarPage from "@/components/layout/radar";
 export default function RadarDashboard() {
   const [isRadarOn, setIsRadarOn] = useState(false);
+  const [capturedAlerts] = useState<
+    Array<{
+      level: "critical" | "warning";
+      title: string;
+      message: string;
+    }>
+  >([]);
+  const [targetIntelligence] = useState<{
+    trackingId: string;
+    status: string;
+    range: string;
+    velocity: string;
+  } | null>(null);
+  const [systemMetrics] = useState<{
+    networkLatency: string;
+    uptime: string;
+  } | null>(null);
+  const criticalAlert = capturedAlerts.find(
+    (alert) => alert.level === "critical",
+  );
+  const warningAlert = capturedAlerts.find(
+    (alert) => alert.level === "warning",
+  );
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -43,20 +66,32 @@ export default function RadarDashboard() {
             <div className="space-y-2 text-sm">
               <div className="bg-red-900/30 p-3 rounded-lg border border-red-700">
                 <p className="text-red-400">CRITICAL ALERT</p>
-                <p>Perimeter breach detected</p>
+                <p>
+                  {isRadarOn && criticalAlert
+                    ? criticalAlert.message
+                    : "No data"}
+                </p>
               </div>
               <div className="bg-yellow-900/30 p-3 rounded-lg border border-yellow-700">
                 <p className="text-yellow-400">WARNING</p>
-                <p>Unidentified signal detected</p>
+                <p>
+                  {isRadarOn && warningAlert ? warningAlert.message : "No data"}
+                </p>
               </div>
             </div>
           </div>
 
           <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800">
             <h2 className="text-green-400 mb-2">Global Status</h2>
-            <p className="text-sm">CPU Load: 14%</p>
-            <p className="text-sm">Temp: 42°C</p>
-            <p className="text-sm">Signal: -42 dBm</p>
+            {isRadarOn ? (
+              <>
+                <p className="text-sm">CPU Load: 14%</p>
+                <p className="text-sm">Temp: 42°C</p>
+                <p className="text-sm">Signal: -42 dBm</p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-400">No data</p>
+            )}
           </div>
         </div>
 
@@ -73,10 +108,22 @@ export default function RadarDashboard() {
         <div className="h-full space-y-4">
           <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800">
             <h2 className="text-green-400 mb-2">Target Intelligence</h2>
-            <p className="text-sm">Tracking ID: TRK-082</p>
-            <p className="text-sm text-red-400">Status: Hostile</p>
-            <p className="text-sm">Range: 142.5m</p>
-            <p className="text-sm">Velocity: 14.2 km/h</p>
+            {isRadarOn && targetIntelligence ? (
+              <>
+                <p className="text-sm">
+                  Tracking ID: {targetIntelligence.trackingId}
+                </p>
+                <p className="text-sm text-red-400">
+                  Status: {targetIntelligence.status}
+                </p>
+                <p className="text-sm">Range: {targetIntelligence.range}</p>
+                <p className="text-sm">
+                  Velocity: {targetIntelligence.velocity}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-400">No data</p>
+            )}
           </div>
 
           <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800">
@@ -99,11 +146,15 @@ export default function RadarDashboard() {
       <div className="grid grid-cols-2 gap-4 mt-6">
         <div className="bg-gray-900 p-4 rounded-xl border border-gray-800">
           <p className="text-sm">Network Latency</p>
-          <h3 className="text-xl">12ms</h3>
+          <h3 className="text-xl">
+            {systemMetrics ? systemMetrics.networkLatency : "No data"}
+          </h3>
         </div>
         <div className="bg-gray-900 p-4 rounded-xl border border-gray-800">
           <p className="text-sm">Uptime</p>
-          <h3 className="text-xl">142h</h3>
+          <h3 className="text-xl">
+            {systemMetrics ? systemMetrics.uptime : "No data"}
+          </h3>
         </div>
       </div>
     </div>
