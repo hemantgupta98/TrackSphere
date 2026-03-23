@@ -7,6 +7,7 @@ import RadarPage from "@/components/layout/radar";
 export default function RadarDashboard() {
   const [isRadarOn, setIsRadarOn] = useState(false);
   const [isHardware, setIsHardware] = useState(false);
+  const [isDetect, setIsDetect] = useState(false);
   const [open, setOpen] = useState(false);
   const [ip, setIp] = useState("");
   const [port, setPort] = useState("");
@@ -86,6 +87,17 @@ export default function RadarDashboard() {
           {isHardware
             ? "Connect Hardware Radar: ON"
             : "Connect Hardware Radar: OFF"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsDetect((prev) => !prev)}
+          className={`rounded-xl px-4 py-2 font-semibold transition ${
+            isDetect
+              ? "bg-green-500 text-black hover:bg-green-400"
+              : "bg-red-600 text-white hover:bg-red-500"
+          }`}
+        >
+          {isDetect ? "Detect Object: ON" : "Detect Object: OFF"}
         </button>
       </div>
 
@@ -199,7 +211,7 @@ export default function RadarDashboard() {
         <div className="h-full space-y-4">
           <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800">
             <h2 className="text-green-400 mb-2">Target Intelligence</h2>
-            {isRadarOn && targetIntelligence ? (
+            {isDetect && targetIntelligence ? (
               <>
                 <p className="text-sm">
                   Tracking ID: {targetIntelligence.trackingId}
@@ -246,6 +258,26 @@ export default function RadarDashboard() {
           <h3 className="text-xl">
             {systemMetrics ? systemMetrics.uptime : "No data"}
           </h3>
+        </div>
+      </div>
+
+      <div className="h-full space-y-4 mt-6">
+        <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800">
+          <h2 className="text-green-400 mb-2">Detect Object</h2>
+          {isDetect && targetIntelligence ? (
+            <>
+              <p className="text-sm">
+                Tracking ID: {targetIntelligence.trackingId}
+              </p>
+              <p className="text-sm text-red-400">
+                Status: {targetIntelligence.status}
+              </p>
+              <p className="text-sm">Range: {targetIntelligence.range}</p>
+              <p className="text-sm">Velocity: {targetIntelligence.velocity}</p>
+            </>
+          ) : (
+            <p className="text-sm text-gray-400">No data</p>
+          )}
         </div>
       </div>
     </div>
