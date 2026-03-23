@@ -1,8 +1,11 @@
 "use client";
 
 import React from "react";
+import { useState } from "react";
 import RadarPage from "@/components/layout/radar";
 export default function RadarDashboard() {
+  const [isRadarOn, setIsRadarOn] = useState(true);
+
   return (
     <div className="min-h-screen bg-black text-white p-6">
       {/* Header */}
@@ -18,9 +21,23 @@ export default function RadarDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => setIsRadarOn((prev) => !prev)}
+          className={`rounded-xl px-4 py-2 font-semibold transition ${
+            isRadarOn
+              ? "bg-green-500 text-black hover:bg-green-400"
+              : "bg-red-600 text-white hover:bg-red-500"
+          }`}
+        >
+          {isRadarOn ? "Radar System: ON" : "Radar System: OFF"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 items-stretch gap-6">
         {/* Left Panel */}
-        <div className="space-y-4">
+        <div className="h-full space-y-2">
           <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800">
             <h2 className="text-green-400 mb-2">Live Feed</h2>
             <div className="space-y-2 text-sm">
@@ -44,10 +61,16 @@ export default function RadarDashboard() {
         </div>
 
         {/* Radar */}
-        <RadarPage />
+        <div className="h-full">
+          {isRadarOn ? (
+            <RadarPage />
+          ) : (
+            <div className="h-full min-h-96 rounded-2xl border border-gray-800 bg-black" />
+          )}
+        </div>
 
         {/* Right Panel */}
-        <div className="space-y-4">
+        <div className="h-full space-y-4">
           <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800">
             <h2 className="text-green-400 mb-2">Target Intelligence</h2>
             <p className="text-sm">Tracking ID: TRK-082</p>

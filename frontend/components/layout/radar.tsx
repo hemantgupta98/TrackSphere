@@ -37,7 +37,7 @@ export default function RadarPage() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center h-screen bg-black text-green-400">
+    <div className="flex h-full min-h-96 items-center justify-center bg-black text-green-400">
       <div className="relative w-100 h-96 rounded-full border border-green-500 overflow-hidden shadow-[0_0_40px_rgba(34,197,94,0.3)]">
         {/* Outer Glow */}
         <div className="absolute inset-0 rounded-full bg-green-900/10"></div>
