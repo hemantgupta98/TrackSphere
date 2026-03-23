@@ -33,7 +33,7 @@ export default function LogoutPage() {
   };
 
   return (
-    <div className="flex justify-center align-middle items-center py-10 bg-gray-50 px-4">
+    <div className="flex justify-center align-middle items-center py-10  text-white px-4">
       <div className="w-full max-w-lg text-center">
         {/* Title */}
         <h1 className="text-3xl font-semibold text-gray-800">
