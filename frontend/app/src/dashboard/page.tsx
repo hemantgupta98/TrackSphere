@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { Sidebar } from "@/components/ui/sidebar";
-
+import RadarPage from "@/components/layout/radar";
 export default function RadarDashboard() {
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -45,13 +44,7 @@ export default function RadarDashboard() {
         </div>
 
         {/* Radar */}
-        <div className="col-span-1 flex items-center justify-center">
-          <div className="w-80 h-80 rounded-full border border-green-500 relative">
-            <div className="absolute inset-0 rounded-full border border-green-500 animate-ping opacity-20"></div>
-            <div className="absolute w-2 h-2 bg-red-500 rounded-full top-20 left-40"></div>
-            <div className="absolute w-2 h-2 bg-green-500 rounded-full bottom-20 right-20"></div>
-          </div>
-        </div>
+        <RadarPage />
 
         {/* Right Panel */}
         <div className="space-y-4">
