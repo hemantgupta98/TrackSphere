@@ -1,11 +1,15 @@
 "use client";
 
 import React from "react";
+import { X } from "lucide-react";
 import { useState } from "react";
 import RadarPage from "@/components/layout/radar";
 export default function RadarDashboard() {
   const [isRadarOn, setIsRadarOn] = useState(false);
-  const [isHardware, setIsHardwae] = useState(false);
+  const [isHardware, setIsHardware] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [ip, setIp] = useState("");
+  const [port, setPort] = useState("");
   const [capturedAlerts] = useState<
     Array<{
       level: "critical" | "warning";
@@ -29,6 +33,19 @@ export default function RadarDashboard() {
   const warningAlert = capturedAlerts.find(
     (alert) => alert.level === "warning",
   );
+  const handleConnect = () => {
+    console.log("Connecting to:", ip, port);
+    // Add your API / WebSocket logic here
+    setOpen(false);
+  };
+
+  const handleHardwareToggle = () => {
+    setIsHardware((prev) => {
+      const next = !prev;
+      setOpen(next);
+      return next;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -59,18 +76,78 @@ export default function RadarDashboard() {
         </button>
         <button
           type="button"
-          onClick={() => setIsHardwae((prev) => !prev)}
+          onClick={handleHardwareToggle}
           className={`rounded-xl px-4 py-2 font-semibold transition ${
             isHardware
               ? "bg-green-500 text-black hover:bg-green-400"
               : "bg-red-600 text-white hover:bg-red-500"
           }`}
         >
-          {isRadarOn
+          {isHardware
             ? "Connect Hardware Radar: ON"
             : "Connect Hardware Radar: OFF"}
         </button>
       </div>
+
+      {isHardware && open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="relative w-full max-w-md rounded-2xl bg-black text-white shadow-xl border border-gray-800 p-6">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
+            >
+              <X size={22} />
+            </button>
+
+            <h2 className="text-xl font-semibold mb-6">
+              Connect Radar Hardware
+            </h2>
+
+            <div className="mb-4">
+              <label className="block text-sm mb-2 text-gray-400">
+                IP Address
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 192.168.1.45"
+                value={ip}
+                onChange={(e) => setIp(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 focus:outline-none focus:border-green-500"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm mb-2 text-gray-400">
+                Port (optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 8080"
+                value={port}
+                onChange={(e) => setPort(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 focus:outline-none focus:border-green-500"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleConnect}
+                className="flex-1 bg-green-600 hover:bg-green-700 transition rounded-lg py-2 font-medium"
+              >
+                Connect
+              </button>
+
+              <button
+                onClick={() => setOpen(false)}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 transition rounded-lg py-2 font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 items-stretch gap-6">
         {/* Left Panel */}
