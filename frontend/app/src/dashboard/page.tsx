@@ -5,6 +5,7 @@ import { useState } from "react";
 import RadarPage from "@/components/layout/radar";
 export default function RadarDashboard() {
   const [isRadarOn, setIsRadarOn] = useState(false);
+  const [isHardware, setIsHardwae] = useState(false);
   const [capturedAlerts] = useState<
     Array<{
       level: "critical" | "warning";
@@ -44,7 +45,7 @@ export default function RadarDashboard() {
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="grid grid-cols-3 mb-4 gap-5">
         <button
           type="button"
           onClick={() => setIsRadarOn((prev) => !prev)}
@@ -55,6 +56,19 @@ export default function RadarDashboard() {
           }`}
         >
           {isRadarOn ? "Radar System: ON" : "Radar System: OFF"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsHardwae((prev) => !prev)}
+          className={`rounded-xl px-4 py-2 font-semibold transition ${
+            isHardware
+              ? "bg-green-500 text-black hover:bg-green-400"
+              : "bg-red-600 text-white hover:bg-red-500"
+          }`}
+        >
+          {isRadarOn
+            ? "Connect Hardware Radar: ON"
+            : "Connect Hardware Radar: OFF"}
         </button>
       </div>
 
