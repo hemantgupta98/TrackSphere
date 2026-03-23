@@ -4,7 +4,7 @@ import React from "react";
 import { useState } from "react";
 import RadarPage from "@/components/layout/radar";
 export default function RadarDashboard() {
-  const [isRadarOn, setIsRadarOn] = useState(true);
+  const [isRadarOn, setIsRadarOn] = useState(false);
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
