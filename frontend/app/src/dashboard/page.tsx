@@ -1,19 +1,28 @@
 "use client";
 
 import { X } from "lucide-react";
-import { forwardRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import RadarPage from "@/components/layout/radar";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { Toaster, toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
-type Hardware = {
-  device: string;
-  wifiName: string;
-  wifiPassword: string;
-  ipAddress: number;
+type HardwareConnectionForm = {
+  ssid?: string;
+  password: string;
+  ipAddress: string;
   port: number;
-  protocol: string;
-  ApiEndpoint: string;
+};
+
+type ConnectionStatus = "connecting" | "connected" | "not_connected";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_HARDWARE_API_URL ?? "http://localhost:5000";
+
+const statusDisplayText: Record<ConnectionStatus, string> = {
+  connecting: "Connecting...",
+  connected: "Connected ✅",
+  not_connected: "Not Connected ❌",
 };
 
 export default function RadarDashboard() {
@@ -22,11 +31,20 @@ export default function RadarDashboard() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<Hardware>();
+  } = useForm<HardwareConnectionForm>();
+
   const [isRadarOn, setIsRadarOn] = useState(false);
-  const [isHardware, setIsHardware] = useState(false);
   const [isDetect, setIsDetect] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [isHardwareModalOpen, setIsHardwareModalOpen] = useState(false);
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("not_connected");
+  const [connectionMessage, setConnectionMessage] = useState(
+    "Hardware has not been connected yet.",
+  );
+  const [connectedDevice, setConnectedDevice] = useState<{
+    ipAddress: string;
+    port: number;
+  } | null>(null);
 
   const [capturedAlerts] = useState<
     Array<{
@@ -35,16 +53,19 @@ export default function RadarDashboard() {
       message: string;
     }>
   >([]);
+
   const [targetIntelligence] = useState<{
     trackingId: string;
     status: string;
     range: string;
     velocity: string;
   } | null>(null);
+
   const [systemMetrics] = useState<{
     networkLatency: string;
     uptime: string;
   } | null>(null);
+
   const criticalAlert = capturedAlerts.find(
     (alert) => alert.level === "critical",
   );
@@ -52,24 +73,110 @@ export default function RadarDashboard() {
     (alert) => alert.level === "warning",
   );
 
-  const onSubmit: SubmitHandler<Hardware> = async (data) => {
-    console.log("FORM DATA 👉", data);
-    toast.success("form submitted");
-    reset();
-  };
+  const checkHardwareStatus = useCallback(
+    async (options?: { shouldNotifyOnOffline?: boolean }) => {
+      if (!connectedDevice) {
+        return;
+      }
 
-  const handleHardwareToggle = () => {
-    setIsHardware((prev) => {
-      const next = !prev;
-      setOpen(next);
-      return next;
-    });
+      try {
+        const response = await fetch(
+          `${API_URL}/hardware-status?ipAddress=${encodeURIComponent(
+            connectedDevice.ipAddress,
+          )}&port=${connectedDevice.port}`,
+        );
+
+        const result = await response.json();
+
+        if (result.success) {
+          setConnectionStatus("connected");
+          setConnectionMessage(result.message || "Hardware is connected.");
+          return;
+        }
+
+        const wasConnected = connectionStatus === "connected";
+        setConnectionStatus("not_connected");
+        setConnectionMessage(result.message || "Hardware is not reachable.");
+
+        if (options?.shouldNotifyOnOffline && wasConnected) {
+          toast.error("Hardware went offline.");
+        }
+      } catch {
+        const wasConnected = connectionStatus === "connected";
+        setConnectionStatus("not_connected");
+        setConnectionMessage("Unable to fetch hardware status.");
+
+        if (options?.shouldNotifyOnOffline && wasConnected) {
+          toast.error("Hardware went offline.");
+        }
+      }
+    },
+    [connectedDevice, connectionStatus],
+  );
+
+  useEffect(() => {
+    if (!connectedDevice || connectionStatus !== "connected") {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void checkHardwareStatus({ shouldNotifyOnOffline: true });
+    }, 8000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [checkHardwareStatus, connectedDevice, connectionStatus]);
+
+  const onSubmit: SubmitHandler<HardwareConnectionForm> = async (data) => {
+    setConnectionStatus("connecting");
+    setConnectionMessage("Attempting to connect to hardware...");
+
+    try {
+      const response = await fetch(`${API_URL}/connect-hardware`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ssid: data.ssid,
+          password: data.password,
+          ipAddress: data.ipAddress,
+          port: Number(data.port),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setConnectionStatus("not_connected");
+        setConnectionMessage(result.message || "Connection failed.");
+        toast.error(result.message || "Connection failed.");
+        return;
+      }
+
+      setConnectedDevice({
+        ipAddress: data.ipAddress,
+        port: Number(data.port),
+      });
+      setConnectionStatus("connected");
+      setConnectionMessage(
+        result.message || "Hardware connected successfully.",
+      );
+      toast.success("Hardware connected successfully.");
+      setIsHardwareModalOpen(false);
+      reset({ ...data, password: "" });
+    } catch {
+      setConnectionStatus("not_connected");
+      setConnectionMessage("Server error while connecting hardware.");
+      toast.error("Server error while connecting hardware.");
+    }
   };
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
-      {/* Header */}
       <Toaster position="top-center" richColors />
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-green-400">Radar Unit-01</h1>
         <div className="flex gap-3">
@@ -94,19 +201,15 @@ export default function RadarDashboard() {
         >
           {isRadarOn ? "Radar System: ON" : "Radar System: OFF"}
         </button>
+
         <button
           type="button"
-          onClick={handleHardwareToggle}
-          className={`rounded-xl px-4 py-2 font-semibold transition ${
-            isHardware
-              ? "bg-green-500 text-black hover:bg-green-400"
-              : "bg-red-600 text-white hover:bg-red-500"
-          }`}
+          onClick={() => setIsHardwareModalOpen(true)}
+          className="rounded-xl px-4 py-2 font-semibold transition bg-gray-800 hover:bg-gray-700"
         >
-          {isHardware
-            ? "Connect Hardware Radar: ON"
-            : "Connect Hardware Radar: OFF"}
+          Connect Hardware Radar
         </button>
+
         <button
           type="button"
           onClick={() => setIsDetect((prev) => !prev)}
@@ -120,13 +223,20 @@ export default function RadarDashboard() {
         </button>
       </div>
 
-      {isHardware && open && (
+      <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900 p-4">
+        <p className="text-sm text-gray-400">Hardware Connection Status</p>
+        <p className="mt-1 text-base font-semibold text-green-400">
+          {statusDisplayText[connectionStatus]}
+        </p>
+        <p className="mt-1 text-sm text-gray-300">{connectionMessage}</p>
+      </div>
+
+      {isHardwareModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="relative w-full max-w-md rounded-2xl bg-black text-white shadow-xl border border-gray-800 p-6">
-            {/* Close Button */}
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => setIsHardwareModalOpen(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
             >
               <X size={22} />
@@ -136,21 +246,7 @@ export default function RadarDashboard() {
               Connect Radar Hardware
             </h2>
 
-            {/* Device Name */}
             <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="mb-4">
-                <label className="block text-sm mb-2 text-gray-400">
-                  Device Name (optional)
-                </label>
-                <Input
-                  type="text"
-                  placeholder="My Radar Device"
-                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
-                  {...register("device")}
-                />
-              </div>
-
-              {/* WiFi SSID */}
               <div className="mb-4">
                 <label className="block text-sm mb-2 text-gray-400">
                   WiFi Name (SSID)
@@ -158,19 +254,16 @@ export default function RadarDashboard() {
                 <Input
                   type="text"
                   placeholder="Enter WiFi name"
-                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
-                  {...register("wifiName", {
-                    required: "Enter your wifi name",
-                  })}
+                  className="w-full h-10 rounded-lg bg-gray-900 border border-gray-700 px-3"
+                  {...register("ssid", {})}
                 />
-                {errors.wifiName && (
+                {errors.ssid && (
                   <span className="text-red-400 text-sm">
-                    {errors.wifiName.message}
+                    {errors.ssid.message}
                   </span>
                 )}
               </div>
 
-              {/* WiFi Password */}
               <div className="mb-4">
                 <label className="block text-sm mb-2 text-gray-400">
                   WiFi Password
@@ -178,31 +271,38 @@ export default function RadarDashboard() {
                 <Input
                   type="password"
                   placeholder="Enter WiFi password"
-                  className="w-full px-4 py-2 rounded-lg
-                 bg-gray-900 border border-gray-700"
-                  {...register("wifiPassword", {
-                    required: "Enter your wifi password",
+                  className="w-full h-10 rounded-lg bg-gray-900 border border-gray-700 px-3"
+                  {...register("password", {
+                    required: "Enter your WiFi password.",
+                    minLength: {
+                      value: 8,
+                      message: "Password must be at least 8 characters.",
+                    },
                   })}
                 />
-                {errors.wifiPassword && (
+                {errors.password && (
                   <span className="text-red-400 text-sm">
-                    {errors.wifiPassword.message}
+                    {errors.password.message}
                   </span>
                 )}
               </div>
 
-              {/* IP Address */}
               <div className="mb-4">
                 <label className="block text-sm mb-2 text-gray-400">
-                  IP Address
+                  Device IP Address
                 </label>
                 <Input
                   type="text"
                   placeholder="e.g. 192.168.1.45"
                   {...register("ipAddress", {
-                    required: "Enter your IP Address",
+                    required: "Enter hardware IP address.",
+                    pattern: {
+                      value:
+                        /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/,
+                      message: "Enter a valid IPv4 address.",
+                    },
                   })}
-                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
+                  className="w-full h-10 rounded-lg bg-gray-900 border border-gray-700 px-3"
                 />
                 {errors.ipAddress && (
                   <span className="text-red-400 text-sm">
@@ -211,16 +311,26 @@ export default function RadarDashboard() {
                 )}
               </div>
 
-              {/* Port */}
               <div className="mb-4">
                 <label className="block text-sm mb-2 text-gray-400">
-                  Port (optional)
+                  Port Number
                 </label>
                 <Input
-                  type="text"
+                  type="number"
                   placeholder="e.g. 80 / 8080"
-                  {...register("port", { required: "Enter your port" })}
-                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
+                  {...register("port", {
+                    required: "Enter hardware port.",
+                    valueAsNumber: true,
+                    min: {
+                      value: 1,
+                      message: "Port must be at least 1.",
+                    },
+                    max: {
+                      value: 65535,
+                      message: "Port must be at most 65535.",
+                    },
+                  })}
+                  className="w-full h-10 rounded-lg bg-gray-900 border border-gray-700 px-3"
                 />
                 {errors.port && (
                   <span className="text-red-400 text-sm">
@@ -229,38 +339,31 @@ export default function RadarDashboard() {
                 )}
               </div>
 
-              {/* Protocol */}
-              <div className="mb-4">
-                <label className="block text-sm mb-2 text-gray-400">
-                  Protocol
-                </label>
-                <select
-                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
-                  {...register("protocol", { required: "Select protocol" })}
-                >
-                  <option value="">Select protocol</option>
-                  <option value="HTTP">HTTP</option>
-                  <option value="WebSocket">WebSocket</option>
-                  <option value="MQTT">MQTT</option>
-                </select>
-                {errors.protocol && (
-                  <span className="text-red-400 text-sm">
-                    {errors.protocol.message}
-                  </span>
-                )}
+              <div className="mb-5 rounded-lg border border-gray-800 bg-gray-900 p-3">
+                <p className="text-sm font-medium text-gray-300">
+                  {statusDisplayText[connectionStatus]}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {connectionMessage}
+                </p>
               </div>
 
-              {/* Buttons */}
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 bg-green-600 hover:bg-green-700 transition rounded-lg py-2 font-medium"
+                  disabled={connectionStatus === "connecting"}
+                  className="flex-1 bg-green-600 hover:bg-green-700 transition rounded-lg py-2 font-medium disabled:opacity-60"
                 >
-                  Connect
+                  {connectionStatus === "connecting"
+                    ? "Connecting..."
+                    : "Connect"}
                 </button>
-
                 <button
-                  onClick={() => reset()}
+                  type="button"
+                  onClick={() => {
+                    reset();
+                    setIsHardwareModalOpen(false);
+                  }}
                   className="flex-1 bg-gray-800 hover:bg-gray-700 transition rounded-lg py-2 font-medium"
                 >
                   Cancel
@@ -270,8 +373,8 @@ export default function RadarDashboard() {
           </div>
         </div>
       )}
+
       <div className="grid grid-cols-3 items-stretch gap-6">
-        {/* Left Panel */}
         <div className="h-full space-y-2">
           <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800">
             <h2 className="text-green-400 mb-2">Live Feed</h2>
@@ -307,7 +410,6 @@ export default function RadarDashboard() {
           </div>
         </div>
 
-        {/* Radar */}
         <div className="h-full">
           {isRadarOn ? (
             <RadarPage />
@@ -316,7 +418,6 @@ export default function RadarDashboard() {
           )}
         </div>
 
-        {/* Right Panel */}
         <div className="h-full space-y-4">
           <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800">
             <h2 className="text-green-400 mb-2">Target Intelligence</h2>
@@ -354,7 +455,6 @@ export default function RadarDashboard() {
         </div>
       </div>
 
-      {/* Bottom Cards */}
       <div className="grid grid-cols-2 gap-4 mt-6">
         <div className="bg-gray-900 p-4 rounded-xl border border-gray-800">
           <p className="text-sm">Network Latency</p>
@@ -392,13 +492,3 @@ export default function RadarDashboard() {
     </div>
   );
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Input = forwardRef<HTMLInputElement, any>(({ icon, ...props }, ref) => (
-  <div className="flex items-center gap-3 border rounded-lg px-4 py-3">
-    <span className="text-gray-400">{icon}</span>
-    <input ref={ref} {...props} className="w-full outline-none text-sm" />
-  </div>
-));
-
-Input.displayName = "Input";
