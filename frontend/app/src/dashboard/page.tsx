@@ -1,16 +1,33 @@
 "use client";
 
-import React from "react";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import RadarPage from "@/components/layout/radar";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { Toaster, toast } from "sonner";
+
+type Hardware = {
+  device: string;
+  wifiName: string;
+  wifiPassword: string;
+  ipAddress: number;
+  port: number;
+  protocol: string;
+  ApiEndpoint: string;
+};
+
 export default function RadarDashboard() {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<Hardware>();
   const [isRadarOn, setIsRadarOn] = useState(false);
   const [isHardware, setIsHardware] = useState(false);
   const [isDetect, setIsDetect] = useState(false);
   const [open, setOpen] = useState(false);
-  const [ip, setIp] = useState("");
-  const [port, setPort] = useState("");
+
   const [capturedAlerts] = useState<
     Array<{
       level: "critical" | "warning";
@@ -34,10 +51,11 @@ export default function RadarDashboard() {
   const warningAlert = capturedAlerts.find(
     (alert) => alert.level === "warning",
   );
-  const handleConnect = () => {
-    console.log("Connecting to:", ip, port);
-    // Add your API / WebSocket logic here
-    setOpen(false);
+
+  const onSubmit: SubmitHandler<Hardware> = async (data) => {
+    console.log("FORM DATA 👉", data);
+    toast.success("form submitted");
+    reset();
   };
 
   const handleHardwareToggle = () => {
@@ -51,6 +69,7 @@ export default function RadarDashboard() {
   return (
     <div className="min-h-screen bg-black text-white p-6">
       {/* Header */}
+      <Toaster position="top-center" richColors />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-green-400">Radar Unit-01</h1>
         <div className="flex gap-3">
@@ -104,6 +123,7 @@ export default function RadarDashboard() {
       {isHardware && open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="relative w-full max-w-md rounded-2xl bg-black text-white shadow-xl border border-gray-800 p-6">
+            {/* Close Button */}
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -116,51 +136,140 @@ export default function RadarDashboard() {
               Connect Radar Hardware
             </h2>
 
-            <div className="mb-4">
-              <label className="block text-sm mb-2 text-gray-400">
-                IP Address
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 192.168.1.45"
-                value={ip}
-                onChange={(e) => setIp(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 focus:outline-none focus:border-green-500"
-              />
-            </div>
+            {/* Device Name */}
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className="mb-4">
+                <label className="block text-sm mb-2 text-gray-400">
+                  Device Name (optional)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="My Radar Device"
+                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
+                  {...register("device")}
+                />
+              </div>
 
-            <div className="mb-6">
-              <label className="block text-sm mb-2 text-gray-400">
-                Port (optional)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 8080"
-                value={port}
-                onChange={(e) => setPort(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 focus:outline-none focus:border-green-500"
-              />
-            </div>
+              {/* WiFi SSID */}
+              <div className="mb-4">
+                <label className="block text-sm mb-2 text-gray-400">
+                  WiFi Name (SSID)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter WiFi name"
+                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
+                  {...register("wifiName", {
+                    required: "Enter your wifi name",
+                  })}
+                />
+                {errors.wifiName && (
+                  <span className="text-red-400 text-sm">
+                    {errors.wifiName.message}
+                  </span>
+                )}
+              </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handleConnect}
-                className="flex-1 bg-green-600 hover:bg-green-700 transition rounded-lg py-2 font-medium"
-              >
-                Connect
-              </button>
+              {/* WiFi Password */}
+              <div className="mb-4">
+                <label className="block text-sm mb-2 text-gray-400">
+                  WiFi Password
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Enter WiFi password"
+                  className="w-full px-4 py-2 rounded-lg
+                 bg-gray-900 border border-gray-700"
+                  {...register("wifiPassword", {
+                    required: "Enter your wifi password",
+                  })}
+                />
+                {errors.wifiPassword && (
+                  <span className="text-red-400 text-sm">
+                    {errors.wifiPassword.message}
+                  </span>
+                )}
+              </div>
 
-              <button
-                onClick={() => setOpen(false)}
-                className="flex-1 bg-gray-800 hover:bg-gray-700 transition rounded-lg py-2 font-medium"
-              >
-                Cancel
-              </button>
-            </div>
+              {/* IP Address */}
+              <div className="mb-4">
+                <label className="block text-sm mb-2 text-gray-400">
+                  IP Address
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g. 192.168.1.45"
+                  {...register("ipAddress", {
+                    required: "Enter your IP Address",
+                  })}
+                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
+                />
+                {errors.ipAddress && (
+                  <span className="text-red-400 text-sm">
+                    {errors.ipAddress.message}
+                  </span>
+                )}
+              </div>
+
+              {/* Port */}
+              <div className="mb-4">
+                <label className="block text-sm mb-2 text-gray-400">
+                  Port (optional)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g. 80 / 8080"
+                  {...register("port", { required: "Enter your port" })}
+                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
+                />
+                {errors.port && (
+                  <span className="text-red-400 text-sm">
+                    {errors.port.message}
+                  </span>
+                )}
+              </div>
+
+              {/* Protocol */}
+              <div className="mb-4">
+                <label className="block text-sm mb-2 text-gray-400">
+                  Protocol
+                </label>
+                <select
+                  className="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700"
+                  {...register("protocol", { required: "Select protocol" })}
+                >
+                  <option value="">Select protocol</option>
+                  <option value="HTTP">HTTP</option>
+                  <option value="WebSocket">WebSocket</option>
+                  <option value="MQTT">MQTT</option>
+                </select>
+                {errors.protocol && (
+                  <span className="text-red-400 text-sm">
+                    {errors.protocol.message}
+                  </span>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-600 hover:bg-green-700 transition rounded-lg py-2 font-medium"
+                >
+                  Connect
+                </button>
+
+                <button
+                  onClick={() => reset()}
+                  className="flex-1 bg-gray-800 hover:bg-gray-700 transition rounded-lg py-2 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
-
       <div className="grid grid-cols-3 items-stretch gap-6">
         {/* Left Panel */}
         <div className="h-full space-y-2">
@@ -283,3 +392,13 @@ export default function RadarDashboard() {
     </div>
   );
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Input = forwardRef<HTMLInputElement, any>(({ icon, ...props }, ref) => (
+  <div className="flex items-center gap-3 border rounded-lg px-4 py-3">
+    <span className="text-gray-400">{icon}</span>
+    <input ref={ref} {...props} className="w-full outline-none text-sm" />
+  </div>
+));
+
+Input.displayName = "Input";
