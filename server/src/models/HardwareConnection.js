@@ -27,6 +27,19 @@ const hardwareConnectionSchema = new mongoose.Schema(
       enum: ["connected", "not_connected"],
       default: "not_connected",
     },
+    cameraAvailable: {
+      type: Boolean,
+      default: false,
+    },
+    streamUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    lastCameraChecked: {
+      type: Date,
+      default: null,
+    },
     lastChecked: {
       type: Date,
       default: Date.now,
